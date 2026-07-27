@@ -12,7 +12,7 @@
     video, canvas { width: 100%; height: 240px; border-radius: 8px; background: #222; object-fit: cover; margin-bottom: 10px; }
     .btn-in { background-color: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
     .btn-out { background-color: #dc3545; color: white; border: none; font-weight: bold; cursor: pointer; }
-    #status { margin-top: 10px; font-weight: bold; }
+    #status { margin-top: 10px; font-weight: bold; word-break: break-word; }
   </style>
 </head>
 <body>
@@ -40,7 +40,8 @@
 </div>
 
 <script>
-  const SCRIPT_URL = "THAY_URL_GOOGLESCRIPT_MỚI_CỦA_BẠN_VÀO_ĐÂY";
+  // Đã sửa lại URL chính xác (xóa chữ T thừa ở đầu)
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyBgJCyho3NoyW0VcaNrs6-tfBySCyAnP9ploAS_lK5BxByTV1NZ1Lj0LPdeQfTL19-pg/exec";
   const video = document.getElementById('webcam');
   const canvas = document.getElementById('canvas');
 
@@ -64,15 +65,15 @@
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
     // Nén ảnh sang định dạng JPEG nhẹ để gửi nhanh
-    const imageDataBase64 = canvas.toDataURL('image/jpeg', 0.6);
+    const imageDataBase64 = canvas.toDataURL('image/jpeg', 0.5);
 
     statusDiv.style.color = "blue";
-    statusDiv.innerText = "⏳ Đang tải ảnh và chấm công...";
+    statusDiv.innerText = "⏳ Đang gửi dữ liệu và lưu ảnh...";
 
+    // Sửa phương thức gửi tin để Google Apps Script nhận dữ liệu đúng chuẩn
     fetch(SCRIPT_URL, {
       method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ 
         maNV: maNV, 
         hoTen: hoTen, 
@@ -80,13 +81,19 @@
         image: imageDataBase64 
       })
     })
-    .then(() => {
-      statusDiv.style.color = "green";
-      statusDiv.innerText = `✅ ${(action === 'CHECK_IN' ? 'Check-in' : 'Check-out')} thành công cho ${hoTen}! (Đã lưu ảnh)`;
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === "success") {
+        statusDiv.style.color = "green";
+        statusDiv.innerText = `✅ ${(action === 'CHECK_IN' ? 'Check-in' : 'Check-out')} thành công cho ${hoTen}!`;
+      } else {
+        statusDiv.style.color = "red";
+        statusDiv.innerText = "❌ " + res.message;
+      }
     })
     .catch(err => {
       statusDiv.style.color = "red";
-      statusDiv.innerText = "❌ Có lỗi xảy ra, vui lòng thử lại!";
+      statusDiv.innerText = "❌ Lỗi gửi dữ liệu! Hãy kiểm tra kết nối mạng hoặc cấp quyền Apps Script.";
     });
   }
 </script>
