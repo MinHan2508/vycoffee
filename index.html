@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vy Coffee - Chấm Công Chụp Ảnh</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; padding: 15px; }
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 420px; text-align: center; }
+    h2 { color: #6f4e37; margin-bottom: 15px; }
+    select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+    video, canvas { width: 100%; height: 240px; border-radius: 8px; background: #222; object-fit: cover; margin-bottom: 10px; }
+    .btn-in { background-color: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
+    .btn-out { background-color: #dc3545; color: white; border: none; font-weight: bold; cursor: pointer; }
+    #status { margin-top: 10px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>☕ VY COFFEE CHẤM CÔNG</h2>
+  
+  <!-- Giao diện Camera -->
+  <video id="webcam" autoplay playsinline></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <label for="nv"><b>Chọn nhân viên:</b></label>
+  <select id="nv">
+    <option value="KIET|Kiệt">KIET - Kiệt</option>
+    <option value="Y|Ý">Y - Ý</option>
+    <option value="HANH|Hạnh">HANH - Hạnh</option>
+    <option value="HAN|Hân">HAN - Hân</option>
+    <option value="HUNG|Hưng">HUNG - Hưng</option>
+  </select>
+
+  <button class="btn-in" onclick="captureAndSend('CHECK_IN')">📸 CHỤP & CHECK-IN</button>
+  <button class="btn-out" onclick="captureAndSend('CHECK_OUT')">📸 CHỤP & CHECK-OUT</button>
+
+  <div id="status"></div>
+</div>
+
+<script>
+  const SCRIPT_URL = "THAY_URL_GOOGLESCRIPT_MỚI_CỦA_BẠN_VÀO_ĐÂY";
+  const video = document.getElementById('webcam');
+  const canvas = document.getElementById('canvas');
+
+  // Mở Camera thiết bị
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
+    .then(stream => { video.srcObject = stream; })
+    .catch(err => { 
+      document.getElementById("status").innerText = "❌ Không thể truy cập Camera. Vui lòng cấp quyền!"; 
+    });
+
+  function captureAndSend(action) {
+    const nvVal = document.getElementById("nv").value.split("|");
+    const maNV = nvVal[0];
+    const hoTen = nvVal[1];
+    const statusDiv = document.getElementById("status");
+
+    // Chụp khung hình từ Video vào Canvas
+    const context = canvas.getContext('2d');
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 240;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Nén ảnh sang định dạng JPEG nhẹ để gửi nhanh
+    const imageDataBase64 = canvas.toDataURL('image/jpeg', 0.6);
+
+    statusDiv.style.color = "blue";
+    statusDiv.innerText = "⏳ Đang tải ảnh và chấm công...";
+
+    fetch(SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        maNV: maNV, 
+        hoTen: hoTen, 
+        action: action, 
+        image: imageDataBase64 
+      })
+    })
+    .then(() => {
+      statusDiv.style.color = "green";
+      statusDiv.innerText = `✅ ${(action === 'CHECK_IN' ? 'Check-in' : 'Check-out')} thành công cho ${hoTen}! (Đã lưu ảnh)`;
+    })
+    .catch(err => {
+      statusDiv.style.color = "red";
+      statusDiv.innerText = "❌ Có lỗi xảy ra, vui lòng thử lại!";
+    });
+  }
+</script>
+
+</body>
+</html>
