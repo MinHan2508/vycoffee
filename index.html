@@ -1,101 +1,292 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vy Coffee - Chấm Công Chụp Ảnh </title>
-  <style>
-    body { font-family: Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; padding: 15px; }
-    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 420px; text-align: center; }
-    h2 { color: #6f4e37; margin-bottom: 15px; }
-    select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
-    video, canvas { width: 100%; height: 240px; border-radius: 8px; background: #222; object-fit: cover; margin-bottom: 10px; }
-    .btn-in { background-color: #28a745; color: white; border: none; font-weight: bold; cursor: pointer; }
-    .btn-out { background-color: #dc3545; color: white; border: none; font-weight: bold; cursor: pointer; }
-    #status { margin-top: 10px; font-weight: bold; word-break: break-word; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Vy Coffee - Chấm công</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    background:#f5f5f5;
+}
+
+.card{
+    max-width:430px;
+    margin:20px auto;
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,.15);
+}
+
+h2{
+    text-align:center;
+    color:#6f4e37;
+    margin-bottom:15px;
+}
+
+video{
+    width:100%;
+    height:260px;
+    background:#000;
+    border-radius:12px;
+    object-fit:cover;
+}
+
+canvas{
+    display:none;
+}
+
+label{
+    display:block;
+    margin-top:15px;
+    margin-bottom:5px;
+    font-weight:bold;
+}
+
+select{
+    width:100%;
+    padding:12px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    font-size:16px;
+}
+
+button{
+    width:100%;
+    padding:14px;
+    margin-top:10px;
+    border:none;
+    border-radius:10px;
+    font-size:17px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+button:disabled{
+    opacity:.5;
+    cursor:not-allowed;
+}
+
+.in{
+    background:#28a745;
+    color:white;
+}
+
+.out{
+    background:#dc3545;
+    color:white;
+}
+
+.camera{
+    background:#007bff;
+    color:white;
+}
+
+#status{
+    margin-top:15px;
+    text-align:center;
+    font-weight:bold;
+}
+</style>
+
 </head>
+
 <body>
 
 <div class="card">
-  <h2>☕ VY COFFEE CHẤM CÔNG 2</h2>
-  
-  <!-- Giao diện Camera -->
-  <video id="webcam" autoplay playsinline></video>
-  <canvas id="canvas" style="display:none;"></canvas>
 
-  <label for="nv"><b>Chọn nhân viên:</b></label>
-  <select id="nv">
-    <option value="KIET|Kiệt">KIET - Kiệt</option>
-    <option value="Y|Ý">Y - Ý</option>
-    <option value="HANH|Hạnh">HANH - Hạnh</option>
-    <option value="HAN|Hân">HAN - Hân</option>
-    <option value="HUNG|Hưng">HUNG - Hưng</option>
-  </select>
+<h2>☕ VY COFFEE CHẤM CÔNG</h2>
 
-  <button class="btn-in" onclick="captureAndSend('CHECK_IN')">📸 CHỤP & CHECK-IN</button>
-  <button class="btn-out" onclick="captureAndSend('CHECK_OUT')">📸 CHỤP & CHECK-OUT</button>
+<video id="video" autoplay playsinline muted></video>
+<canvas id="canvas"></canvas>
 
-  <div id="status"></div>
+<button class="camera" onclick="switchCamera()">
+📷 Đổi Camera
+</button>
+
+<label>Nhân viên</label>
+
+<select id="nv">
+
+<option value="KIET|Kiệt">KIET - Kiệt</option>
+
+<option value="Y|Ý">Y - Ý</option>
+
+<option value="HANH|Hạnh">HANH - Hạnh</option>
+
+<option value="HAN|Hân">HAN - Hân</option>
+
+<option value="HUNG|Hưng">HUNG - Hưng</option>
+
+</select>
+
+<button id="btnIn" class="in" onclick="capture('CHECK_IN')">
+📸 CHECK-IN
+</button>
+
+<button id="btnOut" class="out" onclick="capture('CHECK_OUT')">
+📸 CHECK-OUT
+</button>
+
+<div id="status"></div>
+
 </div>
 
 <script>
-  // Đã sửa lại URL chính xác (xóa chữ T thừa ở đầu)
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyM-jn_VxZp3HFy33S3ITVTJ6LDj8inkybRC3vKLEZlsAdeFyXuOEs9R0ZET4Byn1XZdQ/exec";
-  const video = document.getElementById('webcam');
-  const canvas = document.getElementById('canvas');
 
-  // Mở Camera thiết bị
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
-    .then(stream => { video.srcObject = stream; })
-    .catch(err => { 
-      document.getElementById("status").innerText = "❌ Không thể truy cập Camera. Vui lòng cấp quyền!"; 
-    });
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbyM-jn_VxZp3HFy33S3ITVTJ6LDj8inkybRC3vKLEZlsAdeFyXuOEs9R0ZET4Byn1XZdQ/exec";
 
-  function captureAndSend(action) {
-    const nvVal = document.getElementById("nv").value.split("|");
-    const maNV = nvVal[0];
-    const hoTen = nvVal[1];
-    const statusDiv = document.getElementById("status");
+const video=document.getElementById("video");
+const canvas=document.getElementById("canvas");
+const status=document.getElementById("status");
 
-    // Chụp khung hình từ Video vào Canvas
-    const context = canvas.getContext('2d');
-    canvas.width = video.videoWidth || 320;
-    canvas.height = video.videoHeight || 240;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Nén ảnh sang định dạng JPEG nhẹ để gửi nhanh
-    const imageDataBase64 = canvas.toDataURL('image/jpeg', 0.5);
+let facing="user";
+let stream=null;
 
-    statusDiv.style.color = "blue";
-    statusDiv.innerText = "⏳ Đang gửi dữ liệu và lưu ảnh...";
+async function startCamera(){
 
-    // Sửa phương thức gửi tin để Google Apps Script nhận dữ liệu đúng chuẩn
-    fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ 
-        maNV: maNV, 
-        hoTen: hoTen, 
-        action: action, 
-        image: imageDataBase64 
-      })
-    })
-    .then(res => res.json())
-    .then(res => {
-      if (res.status === "success") {
-        statusDiv.style.color = "green";
-        statusDiv.innerText = `✅ ${(action === 'CHECK_IN' ? 'Check-in' : 'Check-out')} thành công cho ${hoTen}!`;
-      } else {
-        statusDiv.style.color = "red";
-        statusDiv.innerText = "❌ " + res.message;
-      }
-    })
-    .catch(err => {
-      statusDiv.style.color = "red";
-      statusDiv.innerText = "❌ Lỗi gửi dữ liệu! Hãy kiểm tra kết nối mạng hoặc cấp quyền Apps Script.";
-    });
-  }
+try{
+
+if(stream){
+
+stream.getTracks().forEach(track=>track.stop());
+
+}
+
+stream=await navigator.mediaDevices.getUserMedia({
+
+video:{
+facingMode:{
+ideal:facing
+}
+},
+
+audio:false
+
+});
+
+video.srcObject=stream;
+
+}catch(err){
+
+status.style.color="red";
+
+status.innerHTML="❌ Không mở được camera.<br>Hãy cấp quyền camera.";
+
+}
+
+}
+
+startCamera();
+
+async function switchCamera(){
+
+facing=(facing==="user")?"environment":"user";
+
+await startCamera();
+
+}
+
+function setLoading(value){
+
+document.getElementById("btnIn").disabled=value;
+
+document.getElementById("btnOut").disabled=value;
+
+}
+
+function capture(action){
+
+if(video.readyState!==4){
+
+alert("Camera chưa sẵn sàng.");
+
+return;
+
+}
+
+setLoading(true);
+
+status.style.color="blue";
+
+status.innerHTML="⏳ Đang gửi dữ liệu...";
+
+const nv=document.getElementById("nv").value.split("|");
+
+const maNV=nv[0];
+
+const hoTen=nv[1];
+
+canvas.width=video.videoWidth;
+
+canvas.height=video.videoHeight;
+
+canvas.getContext("2d").drawImage(video,0,0);
+
+const image=canvas.toDataURL("image/jpeg",0.6);
+
+fetch(SCRIPT_URL,{
+
+method:"POST",
+
+headers:{
+
+"Content-Type":"text/plain;charset=utf-8"
+
+},
+
+body:JSON.stringify({
+
+maNV,
+
+hoTen,
+
+action,
+
+image
+
+})
+
+})
+
+.then(res=>res.json())
+
+.then(data=>{
+
+setLoading(false);
+
+if(data.status==="success"){
+
+status.style.color="green";
+
+status.innerHTML="✅ "+data.message;
+
+}else{
+
+status.style.color="red";
+
+status.innerHTML="❌ "+data.message;
+
+}
+
+})
+
+.catch(err=>{
+
+setLoading(false);
+
+status.style.color="red";
+
+status.innerHTML="❌ Không thể kết nối Apps Script.";
+
+});
+
+}
+
 </script>
 
 </body>
